@@ -8,6 +8,14 @@ $m = get-mailbox "FunktionONPREM@domain.de"
 
 #####################################################################################################
 
+# list Permission
+
+$m | Get-MailboxPermission | where {$_.isinherited -eq $false }
+
+$m | Get-ADPermission | where {$_.isinherited -eq $false -and $_.User -notlike "NT-Aut*"}
+
+#####################################################################################################
+
 Add-mailboxpermission $m.distinguishedname -user $u.distinguishedname -Accessrights FullAccess
 
 # Automapping 
