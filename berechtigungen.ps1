@@ -8,10 +8,12 @@ $m = get-mailbox "FunktionONPREM@domain.de"
 
 #####################################################################################################
 
-# list Permission
+# list existing old Permission
 
+# Full Access
 $m | Get-MailboxPermission | where {$_.isinherited -eq $false }
 
+# SendAs
 $m | Get-ADPermission | where {$_.isinherited -eq $false -and $_.User -notlike "NT-Aut*"}
 
 #####################################################################################################
