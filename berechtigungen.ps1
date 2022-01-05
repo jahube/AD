@@ -1,5 +1,7 @@
 ########### Anpassen ################################################################################
 
+Get-mailbox -filter { userprincipalname -like "*NAME*" } | select userprincipalname,primarysmtpaddress
+
 $u = get-mailbox "User1_ONPREM@domain.de"
 
 $m = get-mailbox "FunktionONPREM@domain.de"
