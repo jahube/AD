@@ -23,7 +23,7 @@ Add-mailboxpermission $m.distinguishedname -user $u.distinguishedname -Accessrig
 # Automapping 
 Set-ADUser -Identity $m.distinguishedname -Add @{msExchDelegateListLink="$($u.distinguishedname)"}
 
-# Backlink im user ZUM geteilten Postfach prüfen
+# Backlink im user ZUM geteilten Postfach pruefen
 Get-ADUser -Identity $u.distinguishedname -properties msExchDelegateListBL | select -ExpandProperty msExchDelegateListBL
 
 # SendAs         ("Senden Als")
