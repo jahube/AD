@@ -16,6 +16,12 @@ Set-ADUser -Identity $m.distinguishedname -Add @{msExchDelegateListLink="$($u.di
 # Backlink im user ZUM geteilten Postfach prüfen
 Get-ADUser -Identity $u.distinguishedname -properties msExchDelegateListBL | select -ExpandProperty msExchDelegateListBL
 
+# SendAs         ("Senden Als")
+Add-ADPermission -Identity $m.distinguishedname -user $u.distinguishedname -ExtendedRights "Send As"
+
+# Send on Behalf ("Senden im Namen von")
+set-mailbox -Identity $m.distinguishedname -grantsendonbehalfto @{Add="$($u.distinguishedname)"}
+
 #####################################################################################################
 # nur für Korrekturen
 #####################################################################################################
