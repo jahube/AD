@@ -33,13 +33,13 @@ Add-ADPermission -Identity $m.distinguishedname -user $u.distinguishedname -Exte
 set-mailbox -Identity $m.distinguishedname -grantsendonbehalfto @{Add="$($u.distinguishedname)"}
 
 #####################################################################################################
-# nur für Korrekturen
+# nur fuer Korrekturen
 #####################################################################################################
 
 <# clear automapping
 ## Funktionspostfach
 
-# beim Funktionspostfach Automapping für obigen USER rausnehmen
+# beim Funktionspostfach Automapping fuer obigen USER rausnehmen
 Set-ADUser -Identity $m.distinguishedname -Remove @{msExchDelegateListLink="$($u.distinguishedname)"}
 
 # beim Funktionspostfach Automapping für ALLE rausnehmen
@@ -47,7 +47,7 @@ Set-ADUser -Identity $m.distinguishedname -clear msExchDelegateListLink
 
 
 ## USER
-# beim USER Automapping für rausnehmen (eigentlich "falsche" Richtung)
+# beim USER Automapping auf Funktionspostfach rausnehmen ("falsche" Richtung)
 Set-ADUser -Identity $u.distinguishedname -clear msExchDelegateListLink
 #>
 #####################################################################################################
