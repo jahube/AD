@@ -1,19 +1,13 @@
 ﻿
-
-
-
 $allgroups = get-ADGroup -Filter {organizationalunit -eq "OU=Test Accounts,DC=pshell,DC=site" }
-
-
 
 $OUs = Get-OrganizationalUnit 
 
 $DGS = $allgroups | where { $_.Groupscope -eq "Universal" -or $_.Groupscope -eq "Security" }
 
-$OU_Select = $DGS.organizationalunit
+$OU_Select = $DGS.organizationalunit |out-gridview -T "select Group OU" -P |ft
 
- |out-gridview -T "select Group OU" -P |ft
-
+#####################
 
 $Domain_before = "pshell.site"
 
@@ -56,6 +50,6 @@ foreach($group in $ADgroups) {
 $primarysmtpaddress = $group.proxyaddresses | where { $_ -cmatch "^SMTP:" }
 $Local_SMTP = $primarysmtpaddress | where { $_ -match "$Domain_before$"  }
 $SMTP_After = $Local_SMTP -Replace ( $Domain_before, $Domain_after ) -replace "smtp:"
-set-ADGroup $group.DistinguishedName |Set-ADObject -Replace @{ProxyAddresses="$SMTP_After"} 
+Get-ADGroup $group.DistinguishedName |Set-ADObject -Replace @{ProxyAddresses="$SMTP_After"} 
 
 }
