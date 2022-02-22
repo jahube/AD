@@ -18,7 +18,7 @@ $allMbx = Get-ADUser -LDAPFilter "(msExchMailboxGuid=*)" -Properties UserPrincip
 
 #$allMbx = Get-ADUser -LDAPFilter "(msExchMailboxGuid=*)" -Properties UserPrincipalName,DistinguishedName,ObjectGuid,mail,mailnickname,proxyaddresses,msExchMailboxGuid
 
-$mbxs = $allMbx | where { $_.Samaccountname -notin $domainadmins.Samaccountname -or $_.Samaccountname -notin $enterpriseadmins.Samaccountname }
+$mbxs = $allMbx | where { $_.Samaccountname -notin $domainadmins.Samaccountname -and $_.Samaccountname -notin $enterpriseadmins.Samaccountname }
 
 $mbxs.Count
 
