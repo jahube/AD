@@ -3,6 +3,11 @@ $MSOL_Filter = $MSOLUSers | select userprincipalname,immutableID,@{N="Immutable_
 
 $MSOL_Filter.count
 
+$EXORecipients = Get-EXORecipient -ResultSize unlimited -PropertySets all
+$Recipient_filter = $EXORecipients  | select PrimarySmtpAddress,UserPrincipalName,Alias,ExternalDirectoryObjectId,RemoteRecipientType,RecipientTypeDetails,RecipientType,Name,MicrosoftOnlineServicesID,Guid,ExchangeGuid,ExchangeObjectId,DistinguishedName,EmailAddresses,CustomAttribute4,AccountDisabled,SKUAssigned,@{N="TargetProxyAddress_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$routingdomain$" }) -replace "smtp:" }},@{N="Onmicrosoft_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$onmicrosoft$" }) -replace "smtp:" }}
+
+$Mailusers = Get-MailUser -ResultSize unlimited
+$Mailuser_filter = $Mailusers  | select PrimarySmtpAddress,UserPrincipalName,Alias,ExternalDirectoryObjectId,RemoteRecipientType,RecipientTypeDetails,RecipientType,Name,MicrosoftOnlineServicesID,Guid,ExchangeGuid,ExchangeObjectId,DistinguishedName,EmailAddresses,CustomAttribute4,AccountDisabled,SKUAssigned,@{N="TargetProxyAddress_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$routingdomain$" }) -replace "smtp:" }},@{N="Onmicrosoft_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$onmicrosoft$" }) -replace "smtp:" }}
 
 $Cloud = Get-EXOMailbox -ResultSize unlimited -PropertySets all
 $cloud_filter = $Cloud  | select PrimarySmtpAddress,UserPrincipalName,Alias,ExternalDirectoryObjectId,RemoteRecipientType,RecipientTypeDetails,RecipientType,Name,MicrosoftOnlineServicesID,Guid,ExchangeGuid,ExchangeObjectId,DistinguishedName,EmailAddresses,CustomAttribute4,AccountDisabled,SKUAssigned,@{N="TargetProxyAddress_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$routingdomain$" }) -replace "smtp:" }},@{N="Onmicrosoft_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$onmicrosoft$" }) -replace "smtp:" }}
