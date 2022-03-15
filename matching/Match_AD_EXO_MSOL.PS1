@@ -35,8 +35,17 @@ $UPNmatch = $true
 
 $duplicatematch = $null
 $cloud_notfound = $null
+$EXO_type = $null
 
-$Clouduser = $cloud_filter.where({($MSOLuser.ObjectId -eq $_.ExternalDirectoryObjectId) -or ($ADUser.msExchMailboxGuid -eq $_.ExchangeGuid) -or (($ADUser.userprincipalname -eq $_.userprincipalname) -and ($ADUser.PrimarySMTPAddress -eq $_.PrimarySMTPAddress -or $ADUser.mail -eq $_.PrimarySMTPAddress )) })
+$Recipientinfo = $Recipient_filter.where({$MSOLuser.ObjectId -eq $_.ExternalDirectoryObjectId })
+
+IF ($Recipientinfo.RecipientType -eq "UserMailbox") { $Clouduser = $cloud_filter.where({$Recipientinfo.ExternalDirectoryObjectId -eq $_.ExternalDirectoryObjectId }) }
+
+IF ($Recipientinfo.RecipientType -eq "MailUser") { $Clouduser = $Mailuser_filter.where({$Recipientinfo.ExternalDirectoryObjectId -eq $_.ExternalDirectoryObjectId }) }
+
+IF (!($Clouduser) -and $Recipientinfo) { $Clouduser = $Recipientinfo }
+
+IF ($Clouduser.count -gt 1) { $duplicatematch = $true ; $Clouduser = $Clouduser[0]  }
 
 $item = New-Object -TypeName PSObject
 $item | Add-Member -MemberType NoteProperty -Name AD_UserPrincipalName -Value $ADUser.UserPrincipalName
@@ -59,7 +68,10 @@ $item | Add-Member -MemberType NoteProperty -Name Hardmatch -Value $Hardmatch
 $item | Add-Member -MemberType NoteProperty -Name softmatch -Value $softmatch
 $item | Add-Member -MemberType NoteProperty -Name UPNmatch -Value $UPNmatch
 
-IF ($Clouduser.count -eq 1) {
+IF ($Clouduser.count -ne 0) {
+
+$item | Add-Member -MemberType NoteProperty -Name RCP_RecipientType -Value $Recipientinfo.RecipientType
+$item | Add-Member -MemberType NoteProperty -Name RCP_RecipientTypeDetails -Value $Recipientinfo.RecipientTypeDetails
 
 $item | Add-Member -MemberType NoteProperty -Name EXO_Alias -Value $Clouduser.PrimarySmtpAddress
 $item | Add-Member -MemberType NoteProperty -Name EXO_UserPrincipalName -Value $Clouduser.PrimarySmtpAddress
@@ -88,12 +100,12 @@ $duplicatematch = $true
 $item | Add-Member -MemberType NoteProperty -Name EXO_duplicatematch -Value $duplicatematch
 }
 
-IF ($Clouduser.count -eq "0") {
+IF ($Clouduser.count -eq 0) {
 $cloud_notfound = $true
 $item | Add-Member -MemberType NoteProperty -Name EXO_cloud_notfound -Value $cloud_notfound
 }
 
-IF ($MSOLuser.count -eq 1) {
+IF ($MSOLuser.count -ne 0) {
 
 $item | Add-Member -MemberType NoteProperty -Name MSOL_userprincipalname -Value $MSOLuser.userprincipalname
 $item | Add-Member -MemberType NoteProperty -Name MSOL_PrimarySMTPAddress -Value $MSOLuser.PrimarySMTPAddress
@@ -110,13 +122,10 @@ $item | Add-Member -MemberType NoteProperty -Name MSOL_Onmicrosoft -Value $MSOLu
 
 }
 
-IF (($MSOLuser.count -eq 1) -and ($Clouduser.count -eq "1")) {
-
 $data += $item
 
-} ELSE {
 
-IF (($MSOLuser.count -gt 1) -or ($Clouduser.count -eq "1")) {
+IF (($MSOLuser.count -ne 1) -or ($Clouduser.count -ne 1)) {
 
 $cloud_duplicates  += $item
 
@@ -128,6 +137,5 @@ $cloud_notfound_data += $item
 
 }
 
-       }
 
 }
