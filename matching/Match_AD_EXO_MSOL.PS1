@@ -1,74 +1,34 @@
 
 $data =@()
 
-$cloud_duplicates =@()
+$ADUser_duplicates = @()
+$i= 1
+$count =  $Recipient_filter.count
+foreach ($Recipientinfo in $Recipient_filter) {
 
-$cloud_notfound_data =@()
+Write-Progress -Activity "running" -Status $i -PercentComplete (($i/$count)*100) ; $i++
+$MSOLuser = $MSOL_Filter.where({ $Recipientinfo.ExternalDirectoryObjectId -eq  $_.ObjectId })
 
-foreach ($ADUser in $mbxs) {
+IF ($Recipientinfo.RecipientType -eq "UserMailbox") { $Clouduser = $cloud_filter.where({$Recipientinfo.ExternalDirectoryObjectId -eq $_.ExternalDirectoryObjectId }) 
+} ELSEIF ($Recipientinfo.RecipientType -eq "MailUser") { $Clouduser = $Mailuser_filter.where({$Recipientinfo.ExternalDirectoryObjectId -eq $_.ExternalDirectoryObjectId }) }
 
-$MSOLuser = $null
-$hardmatch = $null
-$softmatch = $null
-$UPNmatch = $null
+#$ADUser =  $Mbxs.where({ $Recipientinfo.exchangeguid.Guid -eq  $_.msExchMailboxGuid })
+$ADUser =  $Mbxs.where({ "$($Recipientinfo.PrimarySMTPAddress)" -eq  "$($_.mail)" })
 
-$ObjectGUID = $ADUser.ObjectGUID
-$MSOLuser = $MSOL_Filter.where({ $ObjectGUID -eq $_.Immutable_converted })
-
-IF ($MSOLuser) { 
-$Hardmatch = $true
-$softmatch = $false
-$UPNmatch = $false
-} ELSE { 
-$MSOLuser = $MSOL_Filter.where({ $ADUser.PrimarySMTPAddress -eq $_.PrimarySMTPAddress })
-IF ($MSOLuser) {
-$Hardmatch = $false
-$softmatch = $true
-$UPNmatch = $false
-} ELSE {
-$MSOLuser = $MSOL_Filter.where({ $ADUser.userprincipalname -eq $_.userprincipalname })
-$Hardmatch = $false
-$softmatch = $false
-$UPNmatch = $true
-       }
+IF(!($ADUser)) {
+$ADUser = $mbxs.where({($_.msExchMailboxGuid -eq $Recipientinfo.ExchangeGuid.guid ) -or ($Recipientinfo.userprincipalname -eq $_.userprincipalname) -or ($Recipientinfo.PrimarySMTPAddress -eq $_.PrimarySMTPAddress) -or ($_.mail -eq $Recipientinfo.PrimarySMTPAddress)})
 }
 
-$duplicatematch = $null
-$cloud_notfound = $null
-$EXO_type = $null
+$duplicates = "none"
 
-$Recipientinfo = $Recipient_filter.where({$MSOLuser.ObjectId -eq $_.ExternalDirectoryObjectId })
+IF ($ADUser.count -gt 2) { $ADUser_duplicates += $ADUser[2] }
+IF ($ADUser.count -gt 1) { $duplicates = $ADUser.count ; $ADUser_duplicates += $ADUser[0] ;  $ADUser_duplicates += $ADUser[1] 
 
-IF ($Recipientinfo.RecipientType -eq "UserMailbox") { $Clouduser = $cloud_filter.where({$Recipientinfo.ExternalDirectoryObjectId -eq $_.ExternalDirectoryObjectId }) }
+$ADUser = $ADUser[0]
 
-IF ($Recipientinfo.RecipientType -eq "MailUser") { $Clouduser = $Mailuser_filter.where({$Recipientinfo.ExternalDirectoryObjectId -eq $_.ExternalDirectoryObjectId }) }
-
-IF (!($Clouduser) -and $Recipientinfo) { $Clouduser = $Recipientinfo }
-
-IF ($Clouduser.count -gt 1) { $duplicatematch = $true ; $Clouduser = $Clouduser[0]  }
+}
 
 $item = New-Object -TypeName PSObject
-$item | Add-Member -MemberType NoteProperty -Name AD_UserPrincipalName -Value $ADUser.UserPrincipalName
-$item | Add-Member -MemberType NoteProperty -Name AD_PrimarySmtpAddress -Value $ADUser.PrimarySmtpAddress
-$item | Add-Member -MemberType NoteProperty -Name AD_samaccountname -Value $ADUser.samaccountname
-$item | Add-Member -MemberType NoteProperty -Name AD_msExchMailboxGuid -Value $ADUser.msExchMailboxGuid
-$item | Add-Member -MemberType NoteProperty -Name AD_ObjectGUID -Value $ADUser.ObjectGUID
-$item | Add-Member -MemberType NoteProperty -Name AD_mail -Value $ADUser.mail
-$item | Add-Member -MemberType NoteProperty -Name AD_msExchRemoteRecipientType -Value $ADUser.msExchRemoteRecipientType
-$item | Add-Member -MemberType NoteProperty -Name AD_msExchRecipientDisplayType -Value $ADUser.msExchRecipientDisplayType
-$item | Add-Member -MemberType NoteProperty -Name AD_msExchRecipientTypeDetails -Value $ADUser.msExchRecipientTypeDetails
-$item | Add-Member -MemberType NoteProperty -Name AD_extensionattribute4 -Value $ADUser.extensionattribute4
-$item | Add-Member -MemberType NoteProperty -Name AD_enabled -Value $ADUser.enabled
-$item | Add-Member -MemberType NoteProperty -Name AD_lastlogondate -Value $ADUser.lastlogondate
-$item | Add-Member -MemberType NoteProperty -Name AD_TargetAddress -Value $ADUser.TargetAddress
-$item | Add-Member -MemberType NoteProperty -Name AD_TargetProxyAddress -Value $ADUser.TargetProxyAddress
-$item | Add-Member -MemberType NoteProperty -Name AD_proxyaddresses -Value $ADUser.proxyaddresses
-
-$item | Add-Member -MemberType NoteProperty -Name Hardmatch -Value $Hardmatch
-$item | Add-Member -MemberType NoteProperty -Name softmatch -Value $softmatch
-$item | Add-Member -MemberType NoteProperty -Name UPNmatch -Value $UPNmatch
-
-IF ($Clouduser.count -ne 0) {
 
 $item | Add-Member -MemberType NoteProperty -Name RCP_RecipientType -Value $Recipientinfo.RecipientType
 $item | Add-Member -MemberType NoteProperty -Name RCP_RecipientTypeDetails -Value $Recipientinfo.RecipientTypeDetails
@@ -93,20 +53,6 @@ $item | Add-Member -MemberType NoteProperty -Name EXO_RemoteRecipientType -Value
 $item | Add-Member -MemberType NoteProperty -Name EXO_RecipientTypeDetails -Value $Clouduser.RecipientTypeDetails
 $item | Add-Member -MemberType NoteProperty -Name EXO_RecipientType -Value $Clouduser.RecipientType
 
-}
-
-IF ($Clouduser.count -gt 1) {
-$duplicatematch = $true
-$item | Add-Member -MemberType NoteProperty -Name EXO_duplicatematch -Value $duplicatematch
-}
-
-IF ($Clouduser.count -eq 0) {
-$cloud_notfound = $true
-$item | Add-Member -MemberType NoteProperty -Name EXO_cloud_notfound -Value $cloud_notfound
-}
-
-IF ($MSOLuser.count -ne 0) {
-
 $item | Add-Member -MemberType NoteProperty -Name MSOL_userprincipalname -Value $MSOLuser.userprincipalname
 $item | Add-Member -MemberType NoteProperty -Name MSOL_PrimarySMTPAddress -Value $MSOLuser.PrimarySMTPAddress
 $item | Add-Member -MemberType NoteProperty -Name MSOL_TargetProxyAddress -Value $MSOLuser.TargetProxyAddress_MSOL
@@ -120,22 +66,63 @@ $item | Add-Member -MemberType NoteProperty -Name MSOL_ObjectId -Value $MSOLuser
 $item | Add-Member -MemberType NoteProperty -Name MSOL_LiveId -Value $MSOLuser.LiveId
 $item | Add-Member -MemberType NoteProperty -Name MSOL_Onmicrosoft -Value $MSOLuser.Onmicrosoft_MSOL
 
+IF ($ADUser) { 
+
+$item | Add-Member -MemberType NoteProperty -Name AD_UserPrincipalName -Value $ADUser.UserPrincipalName
+$item | Add-Member -MemberType NoteProperty -Name AD_PrimarySmtpAddress -Value $ADUser.PrimarySmtpAddress
+$item | Add-Member -MemberType NoteProperty -Name AD_samaccountname -Value $ADUser.samaccountname
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchMailboxGuid -Value $ADUser.msExchMailboxGuid
+$item | Add-Member -MemberType NoteProperty -Name AD_ObjectGUID -Value $ADUser.ObjectGUID
+$item | Add-Member -MemberType NoteProperty -Name AD_mail -Value $ADUser.mail
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchRemoteRecipientType -Value $ADUser.msExchRemoteRecipientType
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchRecipientDisplayType -Value $ADUser.msExchRecipientDisplayType
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchRecipientTypeDetails -Value $ADUser.msExchRecipientTypeDetails
+$item | Add-Member -MemberType NoteProperty -Name AD_extensionattribute4 -Value $ADUser.extensionattribute4
+$item | Add-Member -MemberType NoteProperty -Name AD_enabled -Value $ADUser.enabled
+$item | Add-Member -MemberType NoteProperty -Name AD_lastlogondate -Value $ADUser.lastlogondate
+$item | Add-Member -MemberType NoteProperty -Name AD_TargetAddress -Value $ADUser.TargetAddress
+$item | Add-Member -MemberType NoteProperty -Name AD_TargetProxyAddress -Value $ADUser.TargetProxyAddress
+$item | Add-Member -MemberType NoteProperty -Name AD_proxyaddresses -Value $ADUser.proxyaddresses
+
+} ELSE {
+
+$item | Add-Member -MemberType NoteProperty -Name AD_UserPrincipalName -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_PrimarySmtpAddress -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_samaccountname -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchMailboxGuid -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_ObjectGUID -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_mail -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchRemoteRecipientType -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchRecipientDisplayType -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_msExchRecipientTypeDetails -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_extensionattribute4 -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_enabled -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_lastlogondate -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_TargetAddress -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_TargetProxyAddress -Value "KEIN_ADUSER"
+$item | Add-Member -MemberType NoteProperty -Name AD_proxyaddresses -Value "KEIN_ADUSER"
+
 }
 
 $data += $item
 
-
-IF (($MSOLuser.count -ne 1) -or ($Clouduser.count -ne 1)) {
-
-$cloud_duplicates  += $item
-
 }
 
-IF ($Clouduser.count -eq 0) {
+$data | export-Clixml $path\data_ELKW_NEU.xml -Force
 
-$cloud_notfound_data += $item
+$data | Export-Csv $path\data_ELKW_NEU.csv -Encoding UTF8 -Delimiter ";" -Force  -NTI
 
-}
+$data.count
 
+$ADUser_duplicates| Export-Csv $path\ADUser_data_ELKW_NEU.csv -Encoding UTF8 -Delimiter ";" -NTI -Force
 
-}
+$ADUser_duplicates| export-Clixml $path\ADUser_data_ELKW_NEU.xml
+
+$mismatch = $data.where({ $_.RCP_RecipientType -eq "UserMailbox" -and "$($_.AD_TargetAddress)" -ne "KEIN_ADUSER" -and "$($_.AD_TargetAddress)" -ne "$('SMTP:' + $_.EXO_TargetProxyAddress)" })
+
+$mismatch |ft RCP_RecipientType,AD_TargetAddress,EXO_TargetProxyAddress
+$mismatch.Count
+
+$fix = $mismatch.where({ $_.RCP_RecipientType -eq "UserMailbox" -and ("$($_.AD_TargetAddress)" -replace 'SMTP:') -notin $_.EXO_TargetProxyAddress })
+
+$fix |ft RCP_RecipientType,AD_TargetAddress,EXO_TargetProxyAddress
