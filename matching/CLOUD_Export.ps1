@@ -6,8 +6,8 @@ Connect-ExchangeOnline -UserPrincipalName
 @{N="proxyaddresses_join" ;E={ (($_.emailaddresses | where { $_ -notmatch "^x500" -and $_ -notmatch "^SIP" -and $_ -notmatch "^SPO" }) -creplace "smtp:") -join '|' }}
 
 
-$onmicrosoft = "%%%%.onmicrosoft.com"
-$routingdomain = "%%%%.mail.onmicrosoft.com"
+$onmicrosoft = "elkw.onmicrosoft.com"
+$routingdomain = "elkw.mail.onmicrosoft.com"
 
 #$Recipient_filter = $EXORecipients  | select PrimarySmtpAddress,ExternalEmailAddress,UserPrincipalName,Alias,ExternalDirectoryObjectId,RemoteRecipientType,RecipientTypeDetails,RecipientType,Name,MicrosoftOnlineServicesID,Guid,ExchangeGuid,ExchangeObjectId,DistinguishedName,EmailAddresses,CustomAttribute4,AccountDisabled,SKUAssigned,@{N="TargetProxyAddress_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$routingdomain$" }) -replace "smtp:" }},@{N="Onmicrosoft_EXO" ;E={ ($_.emailaddresses | where { $_ -match "$onmicrosoft$" }) -replace "smtp:" }}
 
