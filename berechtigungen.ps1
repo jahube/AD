@@ -2,23 +2,25 @@
 
 Get-mailbox -filter { userprincipalname -like "*NAME*" } | select userprincipalname,primarysmtpaddress
 
-$u = get-mailbox "User1_ONPREM@domain.de"
+$u = get-mailbox "User@domain.de"
 
-$m = get-mailbox "FunktionONPREM@domain.de"
+$m = get-mailbox "Funktion@domain.de"
 
 #####################################################################################################
 
 # list existing old Permission
 
 # Full Access
-$m | Get-MailboxPermission | where {$_.isinherited -eq $false }
+$m | Get-MailboxPermission | where {$_.isinherited -eq $false -and $_.User -notlike "NT-Aut*"}
 
 # SendAs
 $m | Get-ADPermission | where {$_.isinherited -eq $false -and $_.User -notlike "NT-Aut*"}
 
 #####################################################################################################
 
-Add-mailboxpermission $m.distinguishedname -user $u.distinguishedname -Accessrights FullAccess
+Add-mailboxpermission $m.distinguishedname -user $u.distinguishedname -Accessrights FullAccess -AutoMapping $false -Confirm:$false
+
+# Remove-mailboxpermission $m.distinguishedname -user $u.distinguishedname -Accessrights FullAccess -Confirm:$false
 
 # Automapping 
 Set-ADUser -Identity $m.distinguishedname -Add @{msExchDelegateListLink="$($u.distinguishedname)"}
@@ -27,7 +29,10 @@ Set-ADUser -Identity $m.distinguishedname -Add @{msExchDelegateListLink="$($u.di
 Get-ADUser -Identity $u.distinguishedname -properties msExchDelegateListBL | select -ExpandProperty msExchDelegateListBL
 
 # SendAs         ("Senden Als")
-Add-ADPermission -Identity $m.distinguishedname -user $u.distinguishedname -ExtendedRights "Send As"
+Add-ADPermission -Identity $m.distinguishedname -user $u.distinguishedname -ExtendedRights "Send As" -Confirm:$false
+
+# SendAs CLOUD   ("Senden Als")
+Add-recipientPermission $m.distinguishedname -Trustee $u.distinguishedname -AccessRights SendAs -Confirm:$false
 
 # Send on Behalf ("Senden im Namen von")
 set-mailbox -Identity $m.distinguishedname -grantsendonbehalfto @{Add="$($u.distinguishedname)"}
