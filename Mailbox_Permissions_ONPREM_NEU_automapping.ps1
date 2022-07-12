@@ -67,7 +67,9 @@ $Orphans += $item
             $item | Add-Member -MemberType NoteProperty -Name "USER_TargetAddress" -Value "$(($U.emailaddresses | where { $_ -match ".mail.onmicrosoft.com" }) -replace "smtp:")"
 
     $DelegateListLink = Get-ADUser -Identity $m.distinguishedname -properties msExchDelegateListLink | select -ExpandProperty msExchDelegateListLink
-IF ($DelegateListLink -contains "$($U.DistinguishedName)") {  
+             $DLL_SAM = foreach ($L in $DelegateListLink) { Get-ADUser $L }
+
+IF (@($DLL_SAM.SamAccountName) -contains $U.SamAccountName -or $DelegateListLink -contains "$($U.DistinguishedName)") {  
             $item | Add-Member -MemberType NoteProperty -Name "Automapping" -Value "TRUE"  } 
     Else {  $item | Add-Member -MemberType NoteProperty -Name "Automapping" -Value "FALSE" }
 
