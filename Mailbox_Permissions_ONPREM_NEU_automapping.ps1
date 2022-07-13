@@ -16,7 +16,7 @@ $OUT = get-MailboxPermission $D
 
 $USERTYPE = $Null
 
-$result = $OUT | where { $_.isinherited -eq $false -and "$($_.user)" -notmatch "anonym" -and "$($_.user)" -ne "default" -and  "$($_.user)" -ne "Standard" -and $_.user -notlike "NT*Auth*\SEL*" }
+$result = $OUT | where { $_.isinherited -eq $false -and "$($_.user)" -notmatch "anonym" -and "$($_.user)" -ne "default" -and  "$($_.user)" -ne "Standard" -and $_.user -notlike "NT*Aut*SEL*" }
 
 IF ($result) {
 
@@ -47,8 +47,8 @@ $Orphans += $item
 
 } ELSE {
 
-             $U = (get-recipient $P.user -EA silentlycontinue)
-
+              $U = (get-recipient $P.user -EA silentlycontinue)
+            
             $item = New-Object -TypeName PSCustomObject
             $item | Add-Member -MemberType NoteProperty -Name "Mailbox_UPN" -Value  $M.userprincipalname
             $item | Add-Member -MemberType NoteProperty -Name "Mailbox_SMTP" -Value  $M.PrimarySMTPAddress
@@ -67,7 +67,7 @@ $Orphans += $item
             $item | Add-Member -MemberType NoteProperty -Name "USER_TargetAddress" -Value "$(($U.emailaddresses | where { $_ -match ".mail.onmicrosoft.com" }) -replace "smtp:")"
 
     $DelegateListLink = Get-ADUser -Identity $m.distinguishedname -properties msExchDelegateListLink | select -ExpandProperty msExchDelegateListLink
-             $DLL_SAM = foreach ($L in $DelegateListLink) { Get-ADUser $L }
+IF ($DelegateListLink) { $DLL_SAM = foreach ($L in $DelegateListLink) { Get-ADUser $L } } Else { $DLL_SAM = $Null }
 
 IF (@($DLL_SAM.SamAccountName) -contains $U.SamAccountName -or $DelegateListLink -contains "$($U.DistinguishedName)") {  
             $item | Add-Member -MemberType NoteProperty -Name "Automapping" -Value "TRUE"  } 
@@ -99,3 +99,4 @@ $DATA.Count
 $Orphans | Export-Csv c:\Temp\Mailbox_Permissions_Orphans.csv -NTI -Encoding UTF8 -Force -Delimiter ";"
 
 $Orphans.Count
+
