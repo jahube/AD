@@ -15,7 +15,7 @@ foreach ($gruppe in $gruppen) {
 
 If(!($gruppe -in $gruppen_User1)) {
 
-Add-ADGroupMember $gruppe -Members Joerg.Mertin
+Add-ADGroupMember $gruppe -Members $user1
 
 } }
 
